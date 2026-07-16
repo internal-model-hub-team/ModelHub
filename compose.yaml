@@ -20,8 +20,12 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://modelhub:modelhub@postgres:5432/modelhub
       CORS_ORIGINS: http://localhost:3000
+      MODEL_STORAGE_ROOT: /data/model-files
+      MAX_MODEL_FILE_SIZE_BYTES: 524288000
     ports:
       - "8000:8000"
+    volumes:
+      - model-files:/data/model-files
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,3 +72,4 @@ services:
 volumes:
   postgres-data:
   gitea-data:
+  model-files:

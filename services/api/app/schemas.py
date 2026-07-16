@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -32,6 +32,16 @@ class ModelCreate(BaseModel):
         return normalized
 
 
+class ModelFileSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    size_bytes: int
+    content_type: str
+    created_at: datetime
+
+
 class ModelSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -44,6 +54,10 @@ class ModelSummary(BaseModel):
     downloads: int
     likes: int
     updated_at: date
+
+
+class ModelDetail(ModelSummary):
+    files: list[ModelFileSummary]
 
 
 class HealthResponse(BaseModel):

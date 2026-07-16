@@ -7,7 +7,13 @@ from app.main import create_app
 @pytest.fixture
 def client(tmp_path) -> TestClient:
     database_url = f"sqlite:///{tmp_path / 'test-modelhub.db'}"
-    with TestClient(create_app(database_url)) as test_client:
+    storage_root = tmp_path / "model-files"
+    app = create_app(
+        database_url,
+        storage_root=str(storage_root),
+        max_upload_bytes=16,
+    )
+    with TestClient(app) as test_client:
         yield test_client
 
 
@@ -77,6 +83,65 @@ def test_create_model_validates_repository_name(client: TestClient) -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_upload_list_and_download_model_file(client: TestClient) -> None:
+    upload_response = client.post(
+        "/api/v1/models/open-lab/Qwen2.5-Chinese-Chat/files",
+        files={
+            "file": (
+                "weights.safetensors",
+                b"model-bytes",
+                "application/octet-stream",
+            )
+        },
+    )
+
+    assert upload_response.status_code == 201
+    uploaded = upload_response.json()
+    assert uploaded["name"] == "weights.safetensors"
+    assert uploaded["size_bytes"] == 11
+
+    detail_response = client.get(
+        "/api/v1/models/open-lab/Qwen2.5-Chinese-Chat"
+    )
+    assert detail_response.status_code == 200
+    assert detail_response.json()["files"] == [uploaded]
+
+    download_response = client.get(
+        "/api/v1/models/open-lab/Qwen2.5-Chinese-Chat/files/weights.safetensors"
+    )
+    assert download_response.status_code == 200
+    assert download_response.content == b"model-bytes"
+    assert "weights.safetensors" in download_response.headers["content-disposition"]
+
+    duplicate_response = client.post(
+        "/api/v1/models/open-lab/Qwen2.5-Chinese-Chat/files",
+        files={"file": ("weights.safetensors", b"again")},
+    )
+    assert duplicate_response.status_code == 409
+
+
+def test_upload_rejects_unsupported_file_type(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/models/open-lab/Qwen2.5-Chinese-Chat/files",
+        files={"file": ("installer.exe", b"not-a-model")},
+    )
+
+    assert response.status_code == 422
+
+
+def test_upload_rejects_file_over_limit(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/models/open-lab/Qwen2.5-Chinese-Chat/files",
+        files={"file": ("large.safetensors", b"x" * 17)},
+    )
+
+    assert response.status_code == 413
+    detail_response = client.get(
+        "/api/v1/models/open-lab/Qwen2.5-Chinese-Chat"
+    )
+    assert detail_response.json()["files"] == []
 
 
 def test_health_reports_connected_database(client: TestClient) -> None:

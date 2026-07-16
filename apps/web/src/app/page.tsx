@@ -189,8 +189,15 @@ export default async function Home({ searchParams }: HomeProps) {
                     </span>
                     <div className="min-w-0">
                       <h3 className="break-words font-semibold text-[#202124]">
-                        <span className="font-normal text-[#6b6f73]">{model.author}/</span>
-                        {model.name}
+                        <Link
+                          className="hover:underline"
+                          href={`/models/${encodeURIComponent(model.author)}/${encodeURIComponent(model.name)}`}
+                        >
+                          <span className="font-normal text-[#6b6f73]">
+                            {model.author}/
+                          </span>
+                          {model.name}
+                        </Link>
                       </h3>
                       <p className="mt-2 text-sm leading-6 text-[#5f6368]">
                         {model.summary}

@@ -4,6 +4,7 @@
 
 - Next.js 模型发现页
 - 创建模型表单
+- 模型详情、文件上传和下载
 - FastAPI 模型创建、列表、搜索和健康检查接口
 - PostgreSQL 业务数据库
 - Gitea Git 和 Git LFS 托管服务
@@ -59,7 +60,7 @@ python -m venv .venv
 .venv\Scripts\python -m uvicorn app.main:app --reload
 ```
 
-单独运行后端时，数据保存在 `services/api/modelhub.db`。使用 Docker 时，数据保存在 PostgreSQL。
+单独运行后端时，业务数据保存在 `services/api/modelhub.db`，模型文件保存在 `services/api/storage`。使用 Docker 时，业务数据保存在 PostgreSQL，模型文件保存在 `model-files` 数据卷。
 
 ## 三人负责范围
 
@@ -75,6 +76,7 @@ python -m venv .venv
 
 1. 打开 http://localhost:3000，能看到三个示例模型。
 2. 点击“创建模型”，填写表单后返回首页并看到新模型。
-3. 搜索 `中文`，页面只显示匹配的模型。
-4. 打开 http://localhost:8000/api/v1/health，数据库状态为 `connected`。
-5. 打开 http://localhost:3001，能进入 Gitea 初始化页面。
+3. 点击模型名称进入详情页，上传一个 `.safetensors` 文件并下载。
+4. 搜索 `中文`，页面只显示匹配的模型。
+5. 打开 http://localhost:8000/api/v1/health，数据库状态为 `connected`。
+6. 打开 http://localhost:3001，能进入 Gitea 初始化页面。

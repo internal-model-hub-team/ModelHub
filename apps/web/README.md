@@ -41,4 +41,4 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-当前同学提供的后端文件缺少 `routes/auth.py`、`routes/repositories.py` 和 `routes/tokens.py`，补齐后才能完成真实数据联调。后端还没有模型/数据集文件列表、上传和下载接口，因此新详情页暂时只显示仓库资料、README 和 Gitea 克隆地址。
+完整后端位于项目根目录的 `backend`。后端目前没有模型/数据集文件列表、网页上传和下载接口，因此详情页暂时显示仓库资料、README 和 Gitea 克隆地址，文件通过 Git/Gitea 管理。

@@ -87,8 +87,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   const token = options.token === undefined ? getStoredToken() : options.token;
   const headers = new Headers({ Accept: "application/json" });
-  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
-  if (options.body !== undefined && !isFormData) headers.set("Content-Type", "application/json");
+  if (options.body !== undefined) headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   let response: Response;
@@ -96,11 +95,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     response = await fetch(url, {
       method: options.method ?? "GET",
       headers,
-      body: options.body === undefined
-        ? undefined
-        : isFormData
-          ? options.body as FormData
-          : JSON.stringify(options.body),
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
       cache: "no-store",
       signal: options.signal,
     });
@@ -203,16 +198,5 @@ export const tokensApi = {
   },
   remove(tokenId: number) {
     return request<void>(`/tokens/${tokenId}`, { method: "DELETE" });
-  },
-};
-
-// Kept only for the previous upload component. The teammate backend must add
-// this endpoint before file upload can be enabled in the new repository pages.
-export const legacyModelsApi = {
-  uploadFile(author: string, name: string, data: FormData) {
-    return request<unknown>(
-      `/models/${encodeURIComponent(author)}/${encodeURIComponent(name)}/files`,
-      { method: "POST", body: data },
-    );
   },
 };

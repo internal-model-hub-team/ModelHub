@@ -4,38 +4,40 @@ services:
   web:
     build:
       context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
     environment:
-      API_INTERNAL_URL: http://api:8000
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_GITEA_URL: http://localhost:3001
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
     ports:
       - "3000:3000"
     depends_on:
-      api:
+      backend:
         condition: service_healthy
 
-  api:
+  backend:
     build:
-      context: ./services/api
+      context: ./backend
     environment:
-      DATABASE_URL: postgresql+psycopg://modelhub:modelhub@postgres:5432/modelhub
-      CORS_ORIGINS: http://localhost:3000
-      MODEL_STORAGE_ROOT: /data/model-files
-      MAX_MODEL_FILE_SIZE_BYTES: 524288000
+      SECRET_KEY: ${SECRET_KEY:-development-only-change-me}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://hub:hub@postgres:5432/hub}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      GITEA_MOCK: ${GITEA_MOCK:-true}
+      GITEA_URL: ${GITEA_URL:-http://gitea:3000}
+      GITEA_PUBLIC_URL: ${GITEA_PUBLIC_URL:-http://localhost:3001}
+      GITEA_ADMIN_TOKEN: ${GITEA_ADMIN_TOKEN:-}
     ports:
       - "8000:8000"
-    volumes:
-      - model-files:/data/model-files
     depends_on:
       postgres:
         condition: service_healthy
+      gitea:
+        condition: service_started
     healthcheck:
       test:
         - CMD
         - python
         - -c
-        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
       interval: 5s
       timeout: 3s
       retries: 10
@@ -43,15 +45,15 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: modelhub
-      POSTGRES_USER: modelhub
-      POSTGRES_PASSWORD: modelhub
+      POSTGRES_USER: hub
+      POSTGRES_PASSWORD: hub
+      POSTGRES_DB: hub
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U modelhub -d modelhub"]
+      test: ["CMD-SHELL", "pg_isready -U hub -d hub"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -73,4 +75,3 @@ services:
 volumes:
   postgres-data:
   gitea-data:
-  model-files:

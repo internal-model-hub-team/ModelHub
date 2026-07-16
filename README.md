@@ -1,49 +1,65 @@
-# Model Hub
+# Internal Model Hub
 
-这是一个面向模型和数据集托管的最小平台。第一版包含：
+这是一个实验室内部使用的模型与数据集托管平台。前端、后端、数据库和 Gitea 已放在同一个项目中。
 
-- Next.js 模型发现页
-- 创建模型表单
-- 模型详情、文件上传和下载
-- FastAPI 模型创建、列表、搜索和健康检查接口
-- PostgreSQL 业务数据库
-- Gitea Git 和 Git LFS 托管服务
+## 已有功能
 
-## 第一次启动
+- 注册、登录、退出登录和个人资料
+- 模型与数据集发现、搜索、类型/标签筛选和分页
+- 创建公开或私有仓库
+- 仓库详情、README、许可证和 Gitea 克隆地址
+- 个人 API Token 创建、查看和删除
+- 401、404、服务器错误、加载中和无结果提示
 
-电脑需要安装并打开 Docker Desktop。
+第一版不包含在线推理、算力托管、社区讨论和在线编辑。模型文件通过 Gitea/Git 提交；网页上传文件接口尚未实现。
 
-在项目根目录运行：
+## 项目目录
+
+| 目录 | 内容 | 负责人建议 |
+| --- | --- | --- |
+| `apps/web` | Next.js + Tailwind CSS 前端 | 前端同学 |
+| `backend` | FastAPI + SQLAlchemy 后端 | 后端同学 |
+| `compose.yaml` | PostgreSQL、Gitea 和完整启动配置 | 部署同学 |
+
+## 最简单的启动方法
+
+先安装并打开 Docker Desktop，然后在项目根目录执行：
 
 ```powershell
+Copy-Item .env.example .env
 docker compose up --build
 ```
 
-第一次需要下载镜像和依赖，可能等待几分钟。看到服务启动后打开：
+第一次需要下载镜像，可能等待几分钟。启动后打开：
 
 | 地址 | 用途 |
 | --- | --- |
 | http://localhost:3000 | Model Hub 网页 |
-| http://localhost:8000/docs | FastAPI 接口文档 |
+| http://localhost:8000/docs | 后端接口文档 |
+| http://localhost:8000/health | 后端健康检查 |
 | http://localhost:3001 | Gitea |
 
-停止项目：
+停止服务：
 
 ```powershell
 docker compose down
 ```
 
-停止并删除本地数据库和 Gitea 数据：
+默认 `GITEA_MOCK=true`，创建仓库时会返回可用格式的克隆地址，但不会真的调用 Gitea。三人第一次联调建议先使用这个模式。
+
+## 不用 Docker 启动
+
+后端终端：
 
 ```powershell
-docker compose down -v
+cd backend
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
 ```
 
-最后一条命令会删除本地数据，只能在确认不需要这些数据时使用。
-
-## 不使用 Docker 单独运行
-
-前端：
+前端终端：
 
 ```powershell
 cd apps/web
@@ -51,32 +67,22 @@ npm.cmd install
 npm.cmd run dev
 ```
 
-后端：
+## 检查项目
 
 ```powershell
-cd services/api
-python -m venv .venv
-.venv\Scripts\python -m pip install -r requirements-dev.txt
-.venv\Scripts\python -m uvicorn app.main:app --reload
+cd backend
+.venv\Scripts\python -m pytest -q
+
+cd ..\apps\web
+npm.cmd run lint
+npm.cmd run build
 ```
 
-单独运行后端时，业务数据保存在 `services/api/modelhub.db`，模型文件保存在 `services/api/storage`。使用 Docker 时，业务数据保存在 PostgreSQL，模型文件保存在 `model-files` 数据卷。
+## 接入真实 Gitea
 
-## 三人负责范围
+1. 打开 http://localhost:3001 完成 Gitea 初始化并创建管理员账号。
+2. 在 Gitea 生成管理员 API Token。
+3. 修改根目录 `.env`：设置 `GITEA_MOCK=false` 和 `GITEA_ADMIN_TOKEN=...`。
+4. 重新执行 `docker compose up --build`。
 
-| 人员 | 目录 | 工作 |
-| --- | --- | --- |
-| 甲 | `apps/web` | Next.js 页面和样式 |
-| 乙 | `services/api` | FastAPI、数据库和接口 |
-| 丙 | `compose.yaml`、后续的 `infra` | Gitea、Docker、测试和部署 |
-
-每个人从 `main` 创建自己的分支，完成一个小任务后提交 Pull Request。不要直接修改 `main`。
-
-## 当前验收方法
-
-1. 打开 http://localhost:3000，能看到三个示例模型。
-2. 点击“创建模型”，填写表单后返回首页并看到新模型。
-3. 点击模型名称进入详情页，上传一个 `.safetensors` 文件并下载。
-4. 搜索 `中文`，页面只显示匹配的模型。
-5. 打开 http://localhost:8000/api/v1/health，数据库状态为 `connected`。
-6. 打开 http://localhost:3001，能进入 Gitea 初始化页面。
+真实部署前还需要补充 Alembic 数据库迁移、Gitea 账号同步、Git LFS 配额、审计日志和备份。

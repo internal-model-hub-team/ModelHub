@@ -6,6 +6,7 @@ services:
       context: ./apps/web
     environment:
       API_INTERNAL_URL: http://api:8000
+      NEXT_PUBLIC_API_URL: http://localhost:8000
       NEXT_PUBLIC_GITEA_URL: http://localhost:3001
     ports:
       - "3000:3000"

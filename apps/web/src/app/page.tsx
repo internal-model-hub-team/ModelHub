@@ -3,6 +3,7 @@ import {
   Database,
   Download,
   Heart,
+  Plus,
   Search,
   Server,
   Sparkles,
@@ -77,14 +78,23 @@ export default async function Home({ searchParams }: HomeProps) {
             </Link>
             <a href={`${giteaUrl}/explore/repos`}>仓库</a>
           </nav>
-          <div className="ml-auto flex items-center gap-2">
-            <span
-              className={`size-2 rounded-full ${connected ? "bg-[#1e8e3e]" : "bg-[#d93025]"}`}
-              aria-hidden="true"
-            />
-            <span className="text-sm text-[#5f6368]">
-              {connected ? "API 已连接" : "API 未连接"}
-            </span>
+          <div className="ml-auto flex items-center gap-3">
+            <Link
+              className="flex h-9 items-center gap-2 rounded-md bg-[#202124] px-3 text-sm font-medium text-white transition hover:bg-[#3c4043]"
+              href="/new"
+            >
+              <Plus aria-hidden="true" size={17} />
+              创建模型
+            </Link>
+            <div className="flex items-center gap-2">
+              <span
+                className={`size-2 rounded-full ${connected ? "bg-[#1e8e3e]" : "bg-[#d93025]"}`}
+                aria-hidden="true"
+              />
+              <span className="hidden text-sm text-[#5f6368] sm:inline">
+                {connected ? "API 已连接" : "API 未连接"}
+              </span>
+            </div>
           </div>
         </div>
       </header>

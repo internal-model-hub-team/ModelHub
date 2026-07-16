@@ -1,0 +1,29 @@
+# Local tools and generated deliverables
+.agents/
+.codex/
+outputs/
+work/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# JavaScript
+node_modules/
+.next/
+out/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

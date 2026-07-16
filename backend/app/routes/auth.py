@@ -3,6 +3,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
+from ..gitea import gitea
 from ..models import User
 from ..schemas import LoginRequest, TokenOut, UserCreate, UserOut, UserUpdate
 from ..security import create_access_token, get_current_user, hash_password, verify_password
@@ -15,8 +16,11 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     existing = db.scalar(select(User).where(or_(User.username == payload.username, User.email == payload.email)))
     if existing:
         raise HTTPException(409, "Username or email already exists")
+    username = payload.username.lower()
+    email = payload.email.lower()
+    gitea.ensure_user(username, email, payload.password, payload.display_name)
     user = User(
-        username=payload.username.lower(), email=payload.email.lower(),
+        username=username, email=email,
         password_hash=hash_password(payload.password), display_name=payload.display_name,
     )
     db.add(user)
@@ -40,7 +44,10 @@ def me(user: User = Depends(get_current_user)):
 
 @router.patch("/me", response_model=UserOut)
 def update_me(payload: UserUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    for key, value in payload.model_dump(exclude_unset=True).items():
+    values = payload.model_dump(exclude_unset=True)
+    if "display_name" in values:
+        gitea.update_user(user.username, user.email, values["display_name"] or "")
+    for key, value in values.items():
         setattr(user, key, value)
     db.commit()
     db.refresh(user)

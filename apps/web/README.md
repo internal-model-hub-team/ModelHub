@@ -29,7 +29,7 @@ npm.cmd run dev
 | `/login` | 登录 |
 | `/register` | 注册 |
 | `/new` | 创建模型或数据集仓库 |
-| `/repositories/{repo_type}/{owner}/{slug}` | 仓库详情 |
+| `/repositories/{repo_type}/{owner}/{slug}` | 仓库详情、文件上传、目录浏览和下载 |
 | `/account` | 个人资料与 API Token 管理 |
 
 所有产品请求统一由 `src/lib/api.ts` 发出。登录令牌暂时保存在浏览器 `localStorage`，需要登录的请求会自动添加 `Authorization: Bearer <access_token>`。
@@ -41,4 +41,4 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-完整后端位于项目根目录的 `backend`。后端目前没有模型/数据集文件列表、网页上传和下载接口，因此详情页暂时显示仓库资料、README 和 Gitea 克隆地址，文件通过 Git/Gitea 管理。
+完整后端位于项目根目录的 `backend`。仓库所有者可以在详情页上传文件；公开仓库允许直接浏览和下载，私有仓库需要登录。大模型格式或超过后端阈值的文件会自动使用 Git LFS。

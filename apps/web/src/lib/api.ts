@@ -5,6 +5,8 @@ import type {
   PaginatedRepositories,
   Repository,
   RepositoryCreate,
+  RepositoryFile,
+  RepositoryFiles,
   RepoType,
   User,
   Visibility,
@@ -78,6 +80,12 @@ function errorMessage(body: ErrorBody | null, status: number): string {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const response = await send(path, options);
+  if (response.status === 204) return undefined as T;
+  return (await response.json()) as T;
+}
+
+async function send(path: string, options: RequestOptions = {}): Promise<Response> {
   const url = new URL(`/api/v1${path}`, API_BASE_URL);
   Object.entries(options.query ?? {}).forEach(([key, value]) => {
     if (value !== undefined && value !== "") {
@@ -87,7 +95,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   const token = options.token === undefined ? getStoredToken() : options.token;
   const headers = new Headers({ Accept: "application/json" });
-  if (options.body !== undefined) headers.set("Content-Type", "application/json");
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+  if (options.body !== undefined && !isFormData) headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   let response: Response;
@@ -95,7 +104,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     response = await fetch(url, {
       method: options.method ?? "GET",
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined
+        ? undefined
+        : isFormData
+          ? options.body as FormData
+          : JSON.stringify(options.body),
       cache: "no-store",
       signal: options.signal,
     });
@@ -114,8 +127,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     throw new ApiError(errorMessage(body, response.status), response.status);
   }
 
-  if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  return response;
 }
 
 export const authApi = {
@@ -186,6 +198,41 @@ export const repositoriesApi = {
       `/repositories/${encodeURIComponent(repoType)}/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}`,
       { method: "DELETE" },
     );
+  },
+  listFiles(
+    repoType: RepoType,
+    owner: string,
+    slug: string,
+    path = "",
+    signal?: AbortSignal,
+  ) {
+    return request<RepositoryFiles>(
+      `/repositories/${encodeURIComponent(repoType)}/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/files`,
+      { query: { path }, signal },
+    );
+  },
+  uploadFile(
+    repoType: RepoType,
+    owner: string,
+    slug: string,
+    file: File,
+    path: string,
+    useLfs: boolean,
+  ) {
+    const body = new FormData();
+    body.set("file", file);
+    body.set("path", path);
+    body.set("use_lfs", String(useLfs));
+    return request<RepositoryFile>(
+      `/repositories/${encodeURIComponent(repoType)}/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/files`,
+      { method: "POST", body },
+    );
+  },
+  async downloadFile(repoType: RepoType, owner: string, slug: string, path: string) {
+    const response = await send(
+      `/repositories/${encodeURIComponent(repoType)}/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/files/${path.split("/").map(encodeURIComponent).join("/")}`,
+    );
+    return response.blob();
   },
 };
 

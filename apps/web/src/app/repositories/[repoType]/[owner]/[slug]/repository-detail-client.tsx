@@ -9,6 +9,8 @@ import { ErrorState, LoadingState } from "@/components/feedback";
 import { repositoriesApi } from "@/lib/api";
 import type { Repository, RepoType } from "@/lib/types";
 
+import { RepositoryFiles } from "./repository-files";
+
 type DetailProps = {
   repoType: RepoType;
   owner: string;
@@ -106,6 +108,13 @@ export function RepositoryDetailClient({ repoType, owner, slug }: DetailProps) {
           <div className="flex items-center gap-2"><FileText aria-hidden="true" size={16} /><dt className="sr-only">更新时间</dt><dd>{Number.isNaN(updatedAt.getTime()) ? repository.updated_at : updatedAt.toLocaleDateString("zh-CN")} 更新</dd></div>
         </dl>
       </section>
+
+      <RepositoryFiles
+        canUpload={user?.username === repository.owner.username}
+        owner={repository.owner.username}
+        repoType={repository.repo_type}
+        slug={repository.slug}
+      />
 
       <section className="border-b border-[#dedede] py-7">
         <div className="flex items-center gap-2">

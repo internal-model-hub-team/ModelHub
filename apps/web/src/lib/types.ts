@@ -55,6 +55,21 @@ export type RepositoryCreate = {
   readme: string;
 };
 
+export type RepositoryFile = {
+  name: string;
+  path: string;
+  type: "file" | "dir" | "symlink" | "submodule";
+  size: number;
+  sha: string;
+  is_lfs: boolean;
+};
+
+export type RepositoryFiles = {
+  path: string;
+  items: RepositoryFile[];
+  total: number;
+};
+
 export type ApiTokenSummary = {
   id: number;
   name: string;

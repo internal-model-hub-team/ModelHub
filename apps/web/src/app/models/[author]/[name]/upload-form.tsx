@@ -5,14 +5,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
+import { ApiError, legacyModelsApi } from "@/lib/api";
+
 type UploadFormProps = {
-  apiUrl: string;
   author: string;
   name: string;
-};
-
-type ApiError = {
-  detail?: string;
 };
 
 const acceptedFileTypes = [
@@ -34,7 +31,7 @@ const acceptedFileTypes = [
   ".gz",
 ].join(",");
 
-export function UploadForm({ apiUrl, author, name }: UploadFormProps) {
+export function UploadForm({ author, name }: UploadFormProps) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -55,16 +52,7 @@ export function UploadForm({ apiUrl, author, name }: UploadFormProps) {
     setIsError(false);
 
     try {
-      const response = await fetch(
-        `${apiUrl}/api/v1/models/${encodeURIComponent(author)}/${encodeURIComponent(name)}/files`,
-        { method: "POST", body: data },
-      );
-      if (!response.ok) {
-        const body = (await response.json()) as ApiError;
-        throw new Error(
-          typeof body.detail === "string" ? body.detail : "文件上传失败",
-        );
-      }
+      await legacyModelsApi.uploadFile(author, name, data);
 
       form.reset();
       setMessage("文件上传成功");
@@ -72,7 +60,7 @@ export function UploadForm({ apiUrl, author, name }: UploadFormProps) {
     } catch (uploadError) {
       setIsError(true);
       setMessage(
-        uploadError instanceof Error ? uploadError.message : "文件上传失败",
+        uploadError instanceof ApiError ? uploadError.message : "文件上传失败",
       );
     } finally {
       setUploading(false);

@@ -178,3 +178,41 @@ def test_complete_flow():
         assert response.json()["visibility"] == "public"
         response = client.get("/api/v1/repositories/dataset/alice/private-data/files")
         assert response.status_code == 200
+
+        response = client.post(
+            "/api/v1/repositories/model/alice/tiny-bert/files",
+            headers=headers,
+            data={"path": "docs"},
+            files={"file": ("notes.txt", b"scratch notes", "text/plain")},
+        )
+        assert response.status_code == 201
+        assert response.json()["path"] == "docs/notes.txt"
+
+        response = client.delete(
+            "/api/v1/repositories/model/alice/tiny-bert/files/docs/notes.txt"
+        )
+        assert response.status_code == 401
+
+        response = client.delete(
+            "/api/v1/repositories/model/alice/tiny-bert/files/docs/notes.txt",
+            headers=headers,
+        )
+        assert response.status_code == 204
+
+        response = client.get(
+            "/api/v1/repositories/model/alice/tiny-bert/files/docs/notes.txt",
+            headers=headers,
+        )
+        assert response.status_code == 404
+
+        response = client.delete(
+            "/api/v1/repositories/model/alice/tiny-bert/files/docs/notes.txt",
+            headers=headers,
+        )
+        assert response.status_code == 404
+
+        response = client.delete(
+            "/api/v1/repositories/model/alice/tiny-bert/files/docs/%2e%2e/%2e%2e/etc/passwd",
+            headers=headers,
+        )
+        assert response.status_code in (404, 422)

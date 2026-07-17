@@ -334,6 +334,23 @@ def upload_repository_file(
             temporary_path.unlink(missing_ok=True)
 
 
+@router.delete(
+    "/{repo_type}/{owner}/{slug}/files/{file_path:path}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_repository_file(
+    repo_type: RepoType,
+    owner: str,
+    slug: str,
+    file_path: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    repo = owned_repository(db, repo_type, owner, slug, user)
+    normalized_path = normalize_repo_path(file_path)
+    gitea.delete_file(repo.gitea_owner, repo.gitea_repo, normalized_path)
+
+
 @router.get("/{repo_type}/{owner}/{slug}/files/{file_path:path}")
 def download_repository_file(
     repo_type: RepoType,

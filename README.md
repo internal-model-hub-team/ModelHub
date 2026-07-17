@@ -122,7 +122,8 @@ docker compose up -d --build
 | `GET` | `/api/v1/repositories/{repo_type}/{owner}/{slug}/files` | 浏览仓库目录 |
 | `POST` | `/api/v1/repositories/{repo_type}/{owner}/{slug}/files` | 上传文件 |
 | `GET` | `/api/v1/repositories/{repo_type}/{owner}/{slug}/files/{path}` | 下载文件 |
+| `DELETE` | `/api/v1/repositories/{repo_type}/{owner}/{slug}/files/{path}` | 删除文件 |
 
-私有仓库的列表和下载需要登录，只有仓库所有者可以上传文件。README 的创建和修改会同步到 Gitea。
+私有仓库的列表和下载需要登录，只有仓库所有者可以上传或删除文件。README 的创建和修改会同步到 Gitea。
 
 真实生产部署前仍需要补充 Alembic 数据库迁移、Git LFS 配额、对象存储、审计日志、备份和 HTTPS。

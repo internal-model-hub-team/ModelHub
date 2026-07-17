@@ -292,6 +292,36 @@ class GiteaClient:
         data = response.json()["content"]
         return self._serialize_file(data)
 
+    def delete_file(self, owner: str, repo: str, file_path: str, message: str = "") -> None:
+        file_path = normalize_repo_path(file_path)
+        if self.settings.gitea_mock:
+            target = self._mock_file_path(owner, repo, file_path)
+            if not target.is_file():
+                raise HTTPException(404, "File not found")
+            target.unlink()
+            repository = self._mock_repository_path(owner, repo)
+            parent = target.parent
+            while parent != repository and parent.is_relative_to(repository):
+                try:
+                    parent.rmdir()
+                except OSError:
+                    break
+                parent = parent.parent
+            return
+
+        existing = self._get_content(owner, repo, file_path)
+        if not isinstance(existing, dict) or existing.get("type") != "file":
+            raise HTTPException(404, "File not found")
+        self._request(
+            "DELETE",
+            self._content_path(owner, repo, file_path),
+            expected=(200,),
+            json={
+                "sha": existing["sha"],
+                "message": message or f"Delete {file_path}",
+            },
+        )
+
     def read_text_file(self, owner: str, repo: str, file_path: str) -> str:
         file_path = normalize_repo_path(file_path)
         if self.settings.gitea_mock:

@@ -72,7 +72,35 @@ def test_complete_flow():
         )
         assert response.status_code == 201
         assert response.json()["tags"] == ["nlp", "bert"]
+        assert response.json()["category"] == "model-upload"
         assert response.json()["readme"].startswith("# Tiny BERT")
+
+        response = client.post(
+            "/api/v1/repositories",
+            headers=headers,
+            json={
+                "name": "Structured Data Generator",
+                "slug": "structured-generator",
+                "repo_type": "model",
+                "category": "model-generator",
+                "description": "Generate structured support data",
+                "tags": ["generator", "support"],
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["category"] == "model-generator"
+        assert response.json()["tags"] == ["generator", "support"]
+
+        response = client.get(
+            "/api/v1/repositories?repo_type=model&category=model-generator"
+        )
+        assert response.status_code == 200
+        assert response.json()["total"] == 1
+        response = client.get(
+            "/api/v1/repositories?repo_type=model&category=model-upload"
+        )
+        assert response.status_code == 200
+        assert response.json()["total"] == 1
 
         response = client.get("/api/v1/repositories?q=bert")
         assert response.status_code == 200
@@ -150,6 +178,62 @@ def test_complete_flow():
             "/api/v1/repositories/dataset/alice/private-data/files", headers=headers
         )
         assert response.status_code == 200
+
+        response = client.post(
+            "/api/v1/repositories",
+            headers=headers,
+            json={
+                "name": "Support Synthetic Data",
+                "slug": "support-synthetic",
+                "repo_type": "dataset",
+                "category": "dataset-synthetic",
+                "description": "Synthetic customer support conversations",
+                "tags": ["support", "chinese"],
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["category"] == "dataset-synthetic"
+
+        response = client.get(
+            "/api/v1/repositories?repo_type=dataset&category=dataset-synthetic"
+        )
+        assert response.status_code == 200
+        assert response.json()["total"] == 1
+        response = client.get(
+            "/api/v1/repositories?repo_type=dataset&category=mine", headers=headers
+        )
+        assert response.status_code == 200
+        assert response.json()["total"] == 2
+
+        response = client.post(
+            "/api/v1/assistant/chat",
+            headers=headers,
+            json={"message": "帮我找 support 数据集", "mode": "search"},
+        )
+        assert response.status_code == 200
+        assert response.json()["action"] == "search"
+        assert response.json()["repositories"][0]["slug"] == "support-synthetic"
+
+        response = client.post(
+            "/api/v1/assistant/chat",
+            headers=headers,
+            json={
+                "message": "生成客服问答结构化数据",
+                "mode": "generate",
+                "row_count": 5,
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["action"] == "generate"
+        assert response.json()["generator"] == "local"
+        assert len(response.json()["rows"]) == 5
+        assert response.json()["columns"] == [
+            "id",
+            "question",
+            "answer",
+            "category",
+            "quality_score",
+        ]
 
         response = client.post("/api/v1/tokens", headers=headers, json={"name": "CLI"})
         assert response.status_code == 201

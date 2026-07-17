@@ -1,6 +1,7 @@
 import { Box, Database, Download, Globe2, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 
+import { categoryLabels } from "@/lib/repository-categories";
 import type { Repository } from "@/lib/types";
 
 const numberFormatter = new Intl.NumberFormat("zh-CN", {
@@ -39,7 +40,7 @@ export function RepositoryCard({ repository }: { repository: Repository }) {
 
       <div className="mt-4 flex min-h-6 flex-wrap gap-2">
         <span className="rounded bg-[#fff3cf] px-2 py-1 text-xs font-medium text-[#6d4b00]">
-          {isModel ? "模型" : "数据集"}
+          {categoryLabels[repository.category]}
         </span>
         {repository.tags.slice(0, 5).map((tag) => (
           <span className="rounded bg-[#eef4ff] px-2 py-1 text-xs text-[#3558a8]" key={tag}>

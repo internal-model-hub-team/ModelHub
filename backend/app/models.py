@@ -16,6 +16,13 @@ class RepoType(str, enum.Enum):
     dataset = "dataset"
 
 
+class RepositoryCategory(str, enum.Enum):
+    model_upload = "model-upload"
+    model_generator = "model-generator"
+    dataset_upload = "dataset-upload"
+    dataset_synthetic = "dataset-synthetic"
+
+
 class Visibility(str, enum.Enum):
     public = "public"
     private = "private"

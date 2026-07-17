@@ -1,8 +1,9 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from .models import RepoType, Visibility
+from .models import RepoType, RepositoryCategory, Visibility
 
 
 class UserCreate(BaseModel):
@@ -41,6 +42,7 @@ class RepositoryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     slug: str = Field(pattern=r"^[a-zA-Z0-9_.-]{1,100}$")
     repo_type: RepoType
+    category: RepositoryCategory | None = None
     visibility: Visibility = Visibility.public
     description: str = Field(default="", max_length=5000)
     tags: list[str] = Field(default_factory=list, max_length=30)
@@ -72,6 +74,7 @@ class RepositoryOut(BaseModel):
     name: str
     slug: str
     repo_type: RepoType
+    category: RepositoryCategory
     visibility: Visibility
     description: str
     tags: list[str]
@@ -82,6 +85,29 @@ class RepositoryOut(BaseModel):
     owner: OwnerSummary
     created_at: datetime
     updated_at: datetime
+
+
+class AssistantMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=10_000)
+
+
+class AssistantChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=4000)
+    history: list[AssistantMessage] = Field(default_factory=list, max_length=20)
+    mode: Literal["auto", "search", "generate"] = "auto"
+    row_count: int = Field(default=8, ge=1, le=50)
+
+
+class AssistantChatResponse(BaseModel):
+    action: Literal["search", "generate", "answer"]
+    message: str
+    repositories: list[RepositoryOut] = Field(default_factory=list)
+    columns: list[str] = Field(default_factory=list)
+    rows: list[dict[str, str | int | float | bool | None]] = Field(default_factory=list)
+    suggested_name: str = ""
+    suggested_slug: str = ""
+    generator: Literal["local", "llm"] = "local"
 
 
 class PaginatedRepositories(BaseModel):

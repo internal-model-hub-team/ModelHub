@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     lfs_threshold_bytes: int = 10 * 1024 * 1024
     lfs_extensions: str = ".safetensors,.gguf,.bin,.pt,.pth,.onnx"
     git_executable: str = "git"
+    llm_base_url: str = ""
+    llm_api_key: str = ""
+    llm_model: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

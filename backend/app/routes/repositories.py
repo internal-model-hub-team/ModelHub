@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 from ..config import get_settings
 from ..database import get_db
 from ..gitea import GiteaFile, gitea, normalize_repo_path
-from ..models import RepoType, Repository, User, Visibility
+from ..models import RepoType, Repository, RepositoryCategory, User, Visibility
 from ..schemas import (
     PaginatedRepositories,
     RepositoryCreate,
@@ -22,17 +22,49 @@ from ..schemas import (
 from ..security import get_current_user, get_optional_user
 
 router = APIRouter(prefix="/repositories", tags=["repositories"])
+CATEGORY_TAG_PREFIX = "modelhub:"
+
+
+def default_category(repo_type: RepoType) -> RepositoryCategory:
+    return (
+        RepositoryCategory.model_upload
+        if repo_type == RepoType.model
+        else RepositoryCategory.dataset_upload
+    )
+
+
+def category_tag(category: RepositoryCategory) -> str:
+    return f"{CATEGORY_TAG_PREFIX}{category.value}"
+
+
+def repository_category(repo: Repository) -> RepositoryCategory:
+    tags = set(repo.tags.split(","))
+    for category in RepositoryCategory:
+        if category_tag(category) in tags:
+            return category
+    return default_category(repo.repo_type)
+
+
+def stored_tags(category: RepositoryCategory, tags: list[str]) -> str:
+    visible_tags = [tag for tag in tags if not tag.startswith(CATEGORY_TAG_PREFIX)]
+    return ",".join([category_tag(category), *visible_tags])
 
 
 def serialize(repo: Repository, readme: str | None = None) -> RepositoryOut:
+    category = repository_category(repo)
     return RepositoryOut(
         id=repo.id,
         name=repo.name,
         slug=repo.slug,
         repo_type=repo.repo_type,
+        category=category,
         visibility=repo.visibility,
         description=repo.description,
-        tags=[tag for tag in repo.tags.split(",") if tag],
+        tags=[
+            tag
+            for tag in repo.tags.split(",")
+            if tag and not tag.startswith(CATEGORY_TAG_PREFIX)
+        ],
         license=repo.license,
         readme=repo.readme if readme is None else readme,
         clone_url=repo.clone_url,
@@ -107,6 +139,7 @@ def list_repositories(
     repo_type: RepoType | None = None,
     tag: str = "",
     owner: str = "",
+    category: str = "",
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     user: User | None = Depends(get_optional_user),
@@ -129,6 +162,36 @@ def list_repositories(
         )
     if repo_type:
         filters.append(Repository.repo_type == repo_type)
+    category_filters: dict[str, tuple[RepoType, object]] = {
+        RepositoryCategory.model_upload.value: (
+            RepoType.model,
+            Repository.tags.not_ilike(f"%{category_tag(RepositoryCategory.model_generator)}%"),
+        ),
+        RepositoryCategory.model_generator.value: (
+            RepoType.model,
+            Repository.tags.ilike(f"%{category_tag(RepositoryCategory.model_generator)}%"),
+        ),
+        RepositoryCategory.dataset_upload.value: (
+            RepoType.dataset,
+            Repository.tags.not_ilike(f"%{category_tag(RepositoryCategory.dataset_synthetic)}%"),
+        ),
+        RepositoryCategory.dataset_synthetic.value: (
+            RepoType.dataset,
+            Repository.tags.ilike(f"%{category_tag(RepositoryCategory.dataset_synthetic)}%"),
+        ),
+        "public": (RepoType.dataset, Repository.visibility == Visibility.public),
+        "mine": (
+            RepoType.dataset,
+            Repository.owner_id == (user.id if user else -1),
+        ),
+    }
+    if category:
+        if category not in category_filters:
+            raise HTTPException(422, "Invalid repository category")
+        category_repo_type, category_filter = category_filters[category]
+        if repo_type is not None and repo_type != category_repo_type:
+            raise HTTPException(422, "Category does not match repository type")
+        filters.extend([Repository.repo_type == category_repo_type, category_filter])
     if tag:
         filters.append(Repository.tags.ilike(f"%{tag.lower()}%"))
     if owner:
@@ -155,6 +218,15 @@ def create_repository(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    category = payload.category or default_category(payload.repo_type)
+    if (
+        payload.repo_type == RepoType.model
+        and category not in {RepositoryCategory.model_upload, RepositoryCategory.model_generator}
+    ) or (
+        payload.repo_type == RepoType.dataset
+        and category not in {RepositoryCategory.dataset_upload, RepositoryCategory.dataset_synthetic}
+    ):
+        raise HTTPException(422, "Category does not match repository type")
     exists = db.scalar(
         select(Repository).where(
             Repository.owner_id == user.id,
@@ -179,7 +251,7 @@ def create_repository(
         repo_type=payload.repo_type,
         visibility=payload.visibility,
         description=payload.description,
-        tags=",".join(payload.tags),
+        tags=stored_tags(category, payload.tags),
         license=payload.license,
         readme=payload.readme,
         gitea_owner=remote.owner,
@@ -223,8 +295,13 @@ def update_repository(
     repo = owned_repository(db, repo_type, owner, slug, user)
     values = payload.model_dump(exclude_unset=True)
     if "tags" in values:
-        values["tags"] = ",".join(
-            dict.fromkeys(tag.strip().lower() for tag in values["tags"] if tag.strip())
+        values["tags"] = stored_tags(
+            repository_category(repo),
+            list(
+                dict.fromkeys(
+                    tag.strip().lower() for tag in values["tags"] if tag.strip()
+                )
+            ),
         )
     if "readme" in values:
         gitea.put_file_bytes(

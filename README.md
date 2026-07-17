@@ -12,6 +12,9 @@
 - README 实际写入 Gitea 仓库
 - 网页上传、目录浏览和鉴权下载
 - 大模型文件自动使用 Git LFS 存储
+- 模型分为上传模型和结构化数据生成模型
+- 数据集分为公开数据集、我的上传和模型合成数据集
+- 数据助手通过对话查找数据集或生成结构化数据，并可保存到 Gitea
 - 个人 API Token 创建、查看和删除
 - 401、404、服务器错误、加载中和无结果提示
 
@@ -50,6 +53,8 @@ docker compose down
 ```
 
 默认 `GITEA_MOCK=true`，文件和仓库会写入本地模拟目录，适合第一次开发联调。要验证真实 Gitea 和 Git LFS，请按照下面的“接入真实 Gitea”操作。
+
+数据助手默认可以搜索平台数据集，并使用本地模板生成可保存的结构化数据。要接入真实大模型，在 `.env` 中填写兼容 Chat Completions 的 `LLM_BASE_URL`、`LLM_API_KEY` 和 `LLM_MODEL`；没有配置或模型不可用时会自动回退，不影响搜索和保存。
 
 ## 不用 Docker 启动
 
@@ -122,6 +127,7 @@ docker compose up -d --build
 | `GET` | `/api/v1/repositories/{repo_type}/{owner}/{slug}/files` | 浏览仓库目录 |
 | `POST` | `/api/v1/repositories/{repo_type}/{owner}/{slug}/files` | 上传文件 |
 | `GET` | `/api/v1/repositories/{repo_type}/{owner}/{slug}/files/{path}` | 下载文件 |
+| `POST` | `/api/v1/assistant/chat` | 对话查找或生成数据集 |
 
 私有仓库的列表和下载需要登录，只有仓库所有者可以上传文件。README 的创建和修改会同步到 Gitea。
 

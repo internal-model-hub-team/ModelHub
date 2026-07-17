@@ -1,6 +1,8 @@
 import type {
   ApiTokenCreated,
   ApiTokenSummary,
+  AssistantChatResponse,
+  AssistantMessage,
   AuthToken,
   PaginatedRepositories,
   Repository,
@@ -156,6 +158,8 @@ export const repositoriesApi = {
       q?: string;
       repo_type?: RepoType;
       tag?: string;
+      category?: string;
+      owner?: string;
       page?: number;
       page_size?: number;
     },
@@ -245,5 +249,19 @@ export const tokensApi = {
   },
   remove(tokenId: number) {
     return request<void>(`/tokens/${tokenId}`, { method: "DELETE" });
+  },
+};
+
+export const assistantApi = {
+  chat(payload: {
+    message: string;
+    history?: AssistantMessage[];
+    mode?: "auto" | "search" | "generate";
+    row_count?: number;
+  }) {
+    return request<AssistantChatResponse>("/assistant/chat", {
+      method: "POST",
+      body: payload,
+    });
   },
 };

@@ -31,6 +31,7 @@ npm.cmd run dev
 | `/new` | 创建模型或数据集仓库 |
 | `/repositories/{repo_type}/{owner}/{slug}` | 仓库详情、文件上传、目录浏览和下载 |
 | `/account` | 个人资料与 API Token 管理 |
+| `/assistant` | 对话查找数据集、生成结构化数据并保存 |
 
 所有产品请求统一由 `src/lib/api.ts` 发出。登录令牌暂时保存在浏览器 `localStorage`，需要登录的请求会自动添加 `Authorization: Bearer <access_token>`。
 

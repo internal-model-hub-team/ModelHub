@@ -1,5 +1,6 @@
 export type RepoType = "model" | "dataset";
 export type Visibility = "public" | "private";
+export type RepositoryCategory = "model-upload" | "model-generator" | "dataset-upload" | "dataset-synthetic";
 
 export type User = {
   id: number;
@@ -25,6 +26,7 @@ export type Repository = {
   name: string;
   slug: string;
   repo_type: RepoType;
+  category: RepositoryCategory;
   visibility: Visibility;
   description: string;
   tags: string[];
@@ -48,6 +50,7 @@ export type RepositoryCreate = {
   name: string;
   slug: string;
   repo_type: RepoType;
+  category: RepositoryCategory;
   visibility: Visibility;
   description: string;
   tags: string[];
@@ -68,6 +71,22 @@ export type RepositoryFiles = {
   path: string;
   items: RepositoryFile[];
   total: number;
+};
+
+export type AssistantMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export type AssistantChatResponse = {
+  action: "search" | "generate" | "answer";
+  message: string;
+  repositories: Repository[];
+  columns: string[];
+  rows: Array<Record<string, string | number | boolean | null>>;
+  suggested_name: string;
+  suggested_slug: string;
+  generator: "local" | "llm";
 };
 
 export type ApiTokenSummary = {

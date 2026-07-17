@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Box, Database, LockKeyhole, Save } from "lucide-react";
+import { ArrowLeft, Box, Database, LockKeyhole, Save, Sparkles, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -9,7 +9,8 @@ import type { FormEvent } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { LoadingState } from "@/components/feedback";
 import { ApiError, repositoriesApi } from "@/lib/api";
-import type { RepoType, Visibility } from "@/lib/types";
+import { categoryOptions, defaultCategory } from "@/lib/repository-categories";
+import type { RepoType, RepositoryCategory, Visibility } from "@/lib/types";
 
 function makeSlug(name: string) {
   return name.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9_.-]/g, "").slice(0, 100);
@@ -19,6 +20,7 @@ export default function NewRepositoryPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [repoType, setRepoType] = useState<RepoType>("model");
+  const [category, setCategory] = useState<RepositoryCategory>("model-upload");
   const [visibility, setVisibility] = useState<Visibility>("public");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -53,6 +55,7 @@ export default function NewRepositoryPage() {
         name: name.trim(),
         slug: slug.trim(),
         repo_type: repoType,
+        category,
         visibility,
         description: description.trim(),
         tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
@@ -89,8 +92,21 @@ export default function NewRepositoryPage() {
           <fieldset>
             <legend className="mb-2 text-sm font-medium">仓库类型</legend>
             <div className="inline-flex rounded-md border border-[#c9c9c9] bg-white p-1">
-              <button className={`inline-flex h-9 items-center gap-2 rounded px-3 text-sm font-medium ${repoType === "model" ? "bg-[#202124] text-white" : "text-[#5f6368] hover:bg-[#f2f3f5]"}`} onClick={() => setRepoType("model")} type="button"><Box aria-hidden="true" size={16} />模型</button>
-              <button className={`inline-flex h-9 items-center gap-2 rounded px-3 text-sm font-medium ${repoType === "dataset" ? "bg-[#202124] text-white" : "text-[#5f6368] hover:bg-[#f2f3f5]"}`} onClick={() => setRepoType("dataset")} type="button"><Database aria-hidden="true" size={16} />数据集</button>
+              <button className={`inline-flex h-9 items-center gap-2 rounded px-3 text-sm font-medium ${repoType === "model" ? "bg-[#202124] text-white" : "text-[#5f6368] hover:bg-[#f2f3f5]"}`} onClick={() => { setRepoType("model"); setCategory(defaultCategory("model")); }} type="button"><Box aria-hidden="true" size={16} />模型</button>
+              <button className={`inline-flex h-9 items-center gap-2 rounded px-3 text-sm font-medium ${repoType === "dataset" ? "bg-[#202124] text-white" : "text-[#5f6368] hover:bg-[#f2f3f5]"}`} onClick={() => { setRepoType("dataset"); setCategory(defaultCategory("dataset")); }} type="button"><Database aria-hidden="true" size={16} />数据集</button>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium">用途分类</legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {categoryOptions(repoType).map((option) => (
+                <label className={`flex cursor-pointer items-center gap-3 rounded-md border p-4 ${category === option.value ? "border-[#202124] bg-white" : "border-[#dedede]"}`} key={option.value}>
+                  <input checked={category === option.value} name="category" onChange={() => setCategory(option.value)} type="radio" value={option.value} />
+                  {option.value.endsWith("upload") ? <Upload aria-hidden="true" size={18} /> : <Sparkles aria-hidden="true" size={18} />}
+                  <span className="text-sm font-medium">{option.label}</span>
+                </label>
+              ))}
             </div>
           </fieldset>
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, ChevronLeft, ChevronRight, Database, Search, SlidersHorizontal, X } from "lucide-react";
+import { Bot, Box, ChevronLeft, ChevronRight, Database, Search, SlidersHorizontal, Upload, X } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
@@ -15,6 +16,7 @@ type DiscoveryFilters = {
   q: string;
   repoType: RepoType | "";
   tag: string;
+  category: string;
   page: number;
 };
 
@@ -39,6 +41,7 @@ export function DiscoveryClient({ initialFilters }: { initialFilters: DiscoveryF
           q: initialFilters.q || undefined,
           repo_type: initialFilters.repoType || undefined,
           tag: initialFilters.tag || undefined,
+          category: initialFilters.category || undefined,
           page: initialFilters.page,
           page_size: pageSize,
         },
@@ -65,6 +68,7 @@ export function DiscoveryClient({ initialFilters }: { initialFilters: DiscoveryF
     if (filters.q) params.set("q", filters.q);
     if (filters.repoType) params.set("repo_type", filters.repoType);
     if (filters.tag) params.set("tag", filters.tag);
+    if (filters.category) params.set("category", filters.category);
     if (filters.page > 1) params.set("page", String(filters.page));
     router.push(params.size ? `/?${params.toString()}` : "/");
   }
@@ -75,7 +79,14 @@ export function DiscoveryClient({ initialFilters }: { initialFilters: DiscoveryF
   }
 
   const totalPages = result ? Math.max(1, Math.ceil(result.total / result.page_size)) : 1;
-  const hasFilters = Boolean(initialFilters.q || initialFilters.repoType || initialFilters.tag);
+  const hasFilters = Boolean(initialFilters.q || initialFilters.repoType || initialFilters.tag || initialFilters.category);
+  const categoryTitle: Record<string, string> = {
+    "model-upload": "上传模型",
+    "model-generator": "结构化数据生成模型",
+    public: "公开数据集",
+    mine: "我的数据集",
+    "dataset-synthetic": "模型合成数据集",
+  };
 
   return (
     <main>
@@ -88,7 +99,7 @@ export function DiscoveryClient({ initialFilters }: { initialFilters: DiscoveryF
                 仓库发现
               </p>
               <h1 className="text-2xl font-semibold sm:text-3xl">
-                {initialFilters.repoType === "model" ? "发现模型" : initialFilters.repoType === "dataset" ? "发现数据集" : "发现模型与数据集"}
+                {categoryTitle[initialFilters.category] ?? (initialFilters.repoType === "model" ? "发现模型" : initialFilters.repoType === "dataset" ? "发现数据集" : "发现模型与数据集")}
               </h1>
             </div>
           </div>
@@ -116,7 +127,7 @@ export function DiscoveryClient({ initialFilters }: { initialFilters: DiscoveryF
               ["model", "模型"],
               ["dataset", "数据集"],
             ] as const).map(([value, label]) => (
-              <button className={`h-9 rounded-md px-3 text-sm font-medium ${initialFilters.repoType === value ? "bg-[#202124] text-white" : "border border-[#c9c9c9] bg-white text-[#5f6368] hover:bg-[#f2f3f5]"}`} key={value || "all"} onClick={() => navigate({ repoType: value, page: 1 })} type="button">
+              <button className={`h-9 rounded-md px-3 text-sm font-medium ${initialFilters.repoType === value ? "bg-[#202124] text-white" : "border border-[#c9c9c9] bg-white text-[#5f6368] hover:bg-[#f2f3f5]"}`} key={value || "all"} onClick={() => navigate({ repoType: value, category: "", page: 1 })} type="button">
                 {label}
               </button>
             ))}
@@ -127,6 +138,31 @@ export function DiscoveryClient({ initialFilters }: { initialFilters: DiscoveryF
               </button>
             ) : null}
           </div>
+
+          {initialFilters.repoType ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2" aria-label={`${initialFilters.repoType === "model" ? "模型" : "数据集"}分类`}>
+              {(initialFilters.repoType === "model"
+                ? [
+                    ["model-upload", "上传模型", Upload],
+                    ["model-generator", "结构化数据生成模型", Bot],
+                  ]
+                : [
+                    ["public", "公开数据集", Database],
+                    ["mine", "我的上传", Upload],
+                    ["dataset-synthetic", "模型合成", Bot],
+                  ]
+              ).map(([value, label, Icon]) => (
+                <button className={`inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium ${initialFilters.category === value ? "bg-[#fff3cf] text-[#6d4b00]" : "border border-[#dedede] bg-white text-[#5f6368] hover:bg-[#f2f3f5]"}`} key={String(value)} onClick={() => navigate({ category: String(value), page: 1 })} type="button">
+                  <Icon aria-hidden="true" size={15} />
+                  {String(label)}
+                </button>
+              ))}
+              <Link className="inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-[#3558a8] hover:bg-[#eef4ff]" href={initialFilters.repoType === "model" ? "/new" : "/assistant"}>
+                {initialFilters.repoType === "model" ? <Upload aria-hidden="true" size={15} /> : <Bot aria-hidden="true" size={15} />}
+                {initialFilters.repoType === "model" ? "上传或登记模型" : "对话找数据"}
+              </Link>
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -139,7 +175,12 @@ export function DiscoveryClient({ initialFilters }: { initialFilters: DiscoveryF
           {result && result.total > 0 ? <span className="text-sm text-[#6b6f73]">第 {result.page} / {totalPages} 页</span> : null}
         </div>
 
-        {loading ? <LoadingState label="正在加载仓库..." /> : error ? <ErrorState error={error} retry={() => { setLoading(true); setReloadKey((value) => value + 1); }} /> : !result || result.items.length === 0 ? <EmptyState title="没有找到匹配的仓库" description={hasFilters ? "换一个关键词或清除筛选条件后再试。" : "登录后可以创建第一个模型或数据集仓库。"} /> : (
+        {initialFilters.category === "mine" && !user && !authLoading ? (
+          <div className="border-y border-[#dedede] py-10 text-center">
+            <p className="text-sm text-[#6b6f73]">登录后查看自己上传的数据集。</p>
+            <Link className="mt-4 inline-flex h-10 items-center rounded-md bg-[#202124] px-4 text-sm font-medium text-white" href="/login?returnTo=%2F%3Frepo_type%3Ddataset%26category%3Dmine">登录</Link>
+          </div>
+        ) : loading ? <LoadingState label="正在加载仓库..." /> : error ? <ErrorState error={error} retry={() => { setLoading(true); setReloadKey((value) => value + 1); }} /> : !result || result.items.length === 0 ? <EmptyState title="没有找到匹配的仓库" description={hasFilters ? "换一个关键词或清除筛选条件后再试。" : "登录后可以创建第一个模型或数据集仓库。"} /> : (
           <div className="grid gap-3 md:grid-cols-2">
             {result.items.map((repository) => <RepositoryCard key={repository.id} repository={repository} />)}
           </div>

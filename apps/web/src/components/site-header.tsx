@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Database, KeyRound, LogIn, LogOut, Plus, Sparkles, UserRound } from "lucide-react";
+import { Bot, Box, Database, KeyRound, LogIn, LogOut, Plus, Sparkles, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -33,6 +33,10 @@ export function SiteHeader() {
           <Link className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-3 hover:bg-[#f2f3f5] hover:text-[#202124]" href="/?repo_type=dataset">
             <Database aria-hidden="true" size={16} />
             数据集
+          </Link>
+          <Link className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-3 hover:bg-[#f2f3f5] hover:text-[#202124]" href="/assistant">
+            <Bot aria-hidden="true" size={16} />
+            数据助手
           </Link>
         </nav>
 

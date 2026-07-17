@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { ErrorState, LoadingState } from "@/components/feedback";
 import { repositoriesApi } from "@/lib/api";
+import { categoryLabels } from "@/lib/repository-categories";
 import type { Repository, RepoType } from "@/lib/types";
 
 import { RepositoryFiles } from "./repository-files";
@@ -97,7 +98,7 @@ export function RepositoryDetailClient({ repoType, owner, slug }: DetailProps) {
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <span className="rounded bg-[#fff3cf] px-2 py-1 text-xs font-medium text-[#6d4b00]">{isModel ? "模型" : "数据集"}</span>
+          <span className="rounded bg-[#fff3cf] px-2 py-1 text-xs font-medium text-[#6d4b00]">{categoryLabels[repository.category]}</span>
           {repository.tags.map((tag) => <Link className="rounded bg-[#eef4ff] px-2 py-1 text-xs text-[#3558a8] hover:underline" href={`/?repo_type=${repository.repo_type}&tag=${encodeURIComponent(tag)}`} key={tag}>{tag}</Link>)}
         </div>
 

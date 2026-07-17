@@ -154,3 +154,27 @@ def test_complete_flow():
         response = client.post("/api/v1/tokens", headers=headers, json={"name": "CLI"})
         assert response.status_code == 201
         assert response.json()["token"].startswith("imh_")
+
+        response = client.patch(
+            "/api/v1/repositories/model/alice/tiny-bert",
+            headers=headers,
+            json={"visibility": "private"},
+        )
+        assert response.status_code == 200
+        assert response.json()["visibility"] == "private"
+        response = client.get("/api/v1/repositories/model/alice/tiny-bert/files")
+        assert response.status_code == 404
+        response = client.get(
+            "/api/v1/repositories/model/alice/tiny-bert/files", headers=headers
+        )
+        assert response.status_code == 200
+
+        response = client.patch(
+            "/api/v1/repositories/dataset/alice/private-data",
+            headers=headers,
+            json={"visibility": "public"},
+        )
+        assert response.status_code == 200
+        assert response.json()["visibility"] == "public"
+        response = client.get("/api/v1/repositories/dataset/alice/private-data/files")
+        assert response.status_code == 200

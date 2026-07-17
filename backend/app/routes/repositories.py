@@ -234,6 +234,13 @@ def update_repository(
             values["readme"].encode(),
             "Update README from Model Hub",
         )
+    if "visibility" in values or "description" in values:
+        gitea.update_repository(
+            repo.gitea_owner,
+            repo.gitea_repo,
+            private=(values["visibility"] == Visibility.private) if "visibility" in values else None,
+            description=values.get("description"),
+        )
     for key, value in values.items():
         setattr(repo, key, value)
     db.commit()

@@ -215,6 +215,29 @@ class GiteaClient:
             self.put_file_bytes(remote.owner, remote.name, "README.md", readme.encode(), "Initialize README")
         return remote
 
+    def update_repository(
+        self,
+        owner: str,
+        name: str,
+        *,
+        private: bool | None = None,
+        description: str | None = None,
+    ) -> None:
+        if self.settings.gitea_mock:
+            return
+        payload: dict[str, object] = {}
+        if private is not None:
+            payload["private"] = private
+        if description is not None:
+            payload["description"] = description
+        if not payload:
+            return
+        self._request(
+            "PATCH",
+            f"/repos/{quote(owner, safe='')}/{quote(name, safe='')}",
+            json=payload,
+        )
+
     def delete_repository(self, owner: str, name: str) -> None:
         if self.settings.gitea_mock:
             shutil.rmtree(self._mock_repository_path(owner, name), ignore_errors=True)

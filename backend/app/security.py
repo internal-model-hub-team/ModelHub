@@ -71,4 +71,3 @@ def get_optional_user(
     if credentials is None:
         return None
     return get_current_user(credentials, db)
-

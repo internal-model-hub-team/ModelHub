@@ -31,4 +31,3 @@ app.include_router(tokens.router, prefix="/api/v1")
 @app.get("/health", tags=["system"])
 def health():
     return {"status": "ok", "gitea_mode": "mock" if settings.gitea_mock else "live"}
-

@@ -32,4 +32,3 @@ def delete_token(token_id: int, user: User = Depends(get_current_user), db: Sess
         raise HTTPException(404, "Token not found")
     db.delete(record)
     db.commit()
-

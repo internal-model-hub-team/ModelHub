@@ -91,6 +91,21 @@ class PaginatedRepositories(BaseModel):
     page_size: int
 
 
+class RepositoryFileOut(BaseModel):
+    name: str
+    path: str
+    type: str
+    size: int
+    sha: str
+    is_lfs: bool
+
+
+class RepositoryFilesOut(BaseModel):
+    path: str
+    items: list[RepositoryFileOut]
+    total: int
+
+
 class ApiTokenCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
 
@@ -109,4 +124,3 @@ class ApiTokenSummary(BaseModel):
     prefix: str
     created_at: datetime
     last_used_at: datetime | None
-
